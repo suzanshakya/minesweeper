@@ -45,10 +45,10 @@ class MineMenuBar(MenuBar):
     def __init__(self, game):
         self.game = game
         super(MineMenuBar, self).__init__()
-        
+
         body = doc().getElementsByTagName('body').item(0)
         body.setAttribute('id', 'Beginner')
-        
+
         menu_game = MenuBar(True)
         menu_game.addItem('New', MenuCmd(self, 'New'))
         menu_game.addItem(self.span_text('Beginner'), True, \
@@ -59,14 +59,14 @@ class MineMenuBar(MenuBar):
                                                 MenuCmd(self, 'Expert'))
         menu_game.addItem(self.span_text('Custom'), True, \
                                                 MenuCmd(self, 'Custom'))
-        
+
         menu_help = MenuBar(True)
         #menu_help.addItem('Instructions', MenuCmd(self, 'Instructions'))
         menu_help.addItem('About', MenuCmd(self, 'About'))
-        
+
         self.addItem(MenuItem('Game', menu_game))
         self.addItem(MenuItem('Help', menu_help))
-    
+
     def span_text(self, text):
         return '<span class="%s"></span>%s' % (text, text)
 
@@ -74,14 +74,14 @@ class MenuCmd:
     def __init__(self, menu, command):
         self.menu = menu
         self.command = command
-    
+
     def execute(self):
         if self.command == 'New':
             self.menu.game.restart()
         if self.command in ('Beginner', 'Intermediate', 'Expert', 'Custom'):
             body = doc().getElementsByTagName('body').item(0)
             body.setAttribute('id', self.command)
-        
+
             levels = {'Beginner':     [1, ( 8,  8)],
                       'Intermediate': [2, (16, 16)],
                       'Expert':       [3, (16, 32)],
@@ -96,40 +96,40 @@ class MenuCmd:
             pass
         elif self.command == 'About':
             self.show_about()
-    
+
     def show_custom(self):
         self.dialog = DialogBox(StyleName='custom-dialog')
         self.dialog.setHTML('Custom Settings')
-        
+
         contents = VerticalPanel(StyleName='contents')
         self.dialog.setWidget(contents)
-        
+
         # contents of contents
         rows = HorizontalPanel()
         columns = HorizontalPanel()
         bombs = HorizontalPanel()
         buttons = HorizontalPanel()
-        
+
         ADD(contents, rows, columns, bombs, buttons)
-        
+
         self.row = TextBox()
         ADD(rows, Label('Rows:'), self.row)
-        
+
         self.column = TextBox()
         ADD(columns, Label('Columns:'), self.column)
-        
+
         self.bomb = TextBox()
         ADD(bombs, Label('Bombs:'), self.bomb)
-        
+
         ADD(buttons, Button("OK", getattr(self, 'new_game')), \
                      Button("Cancel", getattr(self, 'close_dialog')))
-        
+
         left = (Window.getClientWidth() - 201) / 2
         top = (Window.getClientHeight() - 190) / 2
         self.dialog.setPopupPosition(left, top)
-        
+
         self.dialog.show()
-    
+
     def new_game(self, sender):
         try:
             row = int(self.row.getText())
@@ -152,23 +152,23 @@ class MenuCmd:
             bomb = self.menu.game.calculate_no_of_bomb(row, column)
         self.menu.game.next_game(row, column, bomb)
         self.close_dialog(sender)
-    
+
     def close_dialog(self, sender):
         self.dialog.hide()
-    
+
     def show_about(self):
         self.dialog = PopupPanel(StyleName='about', autoHide=True)
-        
+
         contents = HTMLPanel('', StyleName='contents')
         self.dialog.setWidget(contents)
-        
+
         html = '<p class="pyjamas">MineSweeper written in Python with ' \
                     '<a href="http://pyjs.org" target="_blank">Pyjamas</a><p>' \
                '<p class="comments">Send comments to ' \
                     '<a href="mailto:suzan.shakya@gmail.com">' \
                         'suzan.shakya@gmail.com</a>.<p>'
         contents.setHTML(html)
-        
+
         left = (Window.getClientWidth() - 294) / 2
         top = (Window.getClientHeight() - 112) / 2
         self.dialog.setPopupPosition(left, top)
@@ -178,37 +178,37 @@ class Smiley(FocusPanel):
     def __init__(self, game):
         self.game = game
         super(Smiley, self).__init__(StyleName='facesmile')
-        
+
         self.sinkEvents(Event.ONCONTEXTMENU)
         self.addClickListener(self)
         self.addMouseListener(self)
         self.pressed = False
-    
+
     def onClick(self, sender):
         self.game.restart()
-    
+
     def onMouseDown(self, sender, x, y):
         self.pressed = True
         self.previousStyleName = self.getStyleName()
         self.setStyleName('faceooh')
-    
+
     def onMouseUp(self, sender, x, y):
         if self.pressed:
             self.pressed = False
             self.setStyleName(self.previousStyleName)
-    
+
     def onMouseLeave(self, sender):
         self.onMouseUp(sender, 0, 0)
 
 class RemoteHandler:
     def __init__(self, game):
         self.game = game
-        
+
     def onRemoteResponse(self, response, request_info):
         if request_info.method == 'get_scores':
             self.game.toppers = response
             self.load_top_scores()
-    
+
     def load_top_scores(self):
         html = "<p>These are the top MineSweepers.<p>"
         html += "<table class='scores_table'>"
@@ -225,7 +225,7 @@ class RemoteHandler:
             html += "</table></td>"
         html += "</tr></table>"
         SCORES.setHTML(html)
-    
+
     def onRemoteError(self, code, message, request_info):
         LOG.setHTML(str(message))
         Timer(5000, lambda sender: LOG.setHTML(''))
@@ -234,23 +234,23 @@ class RemainingMineHandler:
     """handler for counter, only active when counter is 000"""
     def __init__(self, game):
         self.game = game
-    
+
     def onClick(self, sender):
         self.game.counter.setStyleName('digit counter')
-        
+
         bomb_explodes_on = [one for one in self.game.bombed_cells \
                                                             if one.state != 1]
         if bomb_explodes_on:
             self.game.show_all_bombs(bomb_explodes_on)
             # the above method will set game.started == False, so set it True
             self.game.started = True
-        
+
         for one in self.game.get_all_cells():
             if not self.game.started:
                 break
             elif one.state in (0, 2) and one.count != -1:
                 self.game.grid.onClick(one)
-        
+
         self.game.started = False
         if bomb_explodes_on:
             self.game.face.setStyleName('facedead')
@@ -261,10 +261,10 @@ class Cell(SimplePanel):
         self.x = x
         self.y = y
         self.grid = grid
-        
+
         self.count = 0  # count of surr bombs. -1 if it contains bomb
         self.state = 0  # 0 = blank, 1 = flagged, 2 = qmarked, 3 = opened
-        
+
         # mock self.element as if it were td associated with this cell.
         # because we won't be creating div inside td.
         self.element = grid.cellFormatter.getElement(x, y)
@@ -282,10 +282,10 @@ class CustomGrid(Grid):
             self.cells.append([])
             for j in xrange(column):
                 self.cells[-1].append(Cell(i, j, self))
-    
+
     def get_cell(self, row, column):
         return self.cells[row][column]
-    
+
     def onBrowserEvent(self, event):
         DOM.eventPreventDefault(event)
         if not self.game.started:
@@ -298,7 +298,7 @@ class CustomGrid(Grid):
         row = DOM.getChildIndex(table, tr)
         column = DOM.getChildIndex(tr, td)
         target_cell = self.get_cell(row, column)
-        
+
         type = DOM.eventGetType(event)
         event_mapper = {'click': 'onClick',
                         'contextmenu': 'onRightClick',
@@ -308,7 +308,7 @@ class CustomGrid(Grid):
         event_handler = event_mapper.get(type)
         if event_handler:
             getattr(self, event_handler)(target_cell)
-    
+
     def onClick(self, target):
         if target.state == 1:
             return
@@ -318,13 +318,13 @@ class CustomGrid(Grid):
         target.setStyleName('opened')
         target.state = 3
         self.game.count_opened_cells += 1
-        
+
         if self.game.first_click:
             self.game.first_click = False
             self.game.onTimer(target)
             if target.count == -1:
                 self.game.move_to_extra_mine(target)
-        
+
         if target.count == -1:
             self.game.show_all_bombs([target])
             return
@@ -332,9 +332,9 @@ class CustomGrid(Grid):
             self.game.open_neighboring_cells(target)
         else:
             setColorfulHTML(target.getElement(), target.count)
-        
+
         self.game.check_win()
-    
+
     def onRightClick(self, target):
         if target.state == 3:
             return
@@ -352,10 +352,10 @@ class CustomGrid(Grid):
         elif target.state == 2:
             target.setStyleName('blank')
             target.state = 0
-        
+
         self.game.set_counter()
         self.game.check_win()
-    
+
     def onMouseDown(self, target):
         if target.state == 0:
             target.addStyleName('pressed')
@@ -364,13 +364,13 @@ class CustomGrid(Grid):
             self.game.press_neighbor_cells(target)
         self.game.face.setStyleName('faceooh')
         self.game.no_of_click += 1
-    
+
     def onMouseUp(self, target):
         for one in self.game.to_be_released:
             one.removeStyleName('pressed')
         self.game.to_be_released = []
         self.game.face.setStyleName('facesmile')
-    
+
     def onMouseLeave(self, target):
         self.onMouseUp(target)
 
@@ -378,7 +378,7 @@ class Game(VerticalPanel):
     def __init__(self, row, column=0):
         super(Game, self).__init__(StyleName='game')
         self.sinkEvents(Event.ONCONTEXTMENU)  # to disable right click
-        
+
         self.row = row
         self.column = column or row
         self.level = 1
@@ -386,66 +386,66 @@ class Game(VerticalPanel):
         self.remote = DataService()
         self.remote_handler = RemoteHandler(self)
         self.remote.get_scores(self.remote_handler)
-        
+
         # contents of Game
         menubar = MineMenuBar(self)
         score_board = HorizontalPanel(StyleName='score-board')
         self.grid_panel = SimplePanel(StyleName='grid-panel')
-        
+
         ADD(self, menubar, score_board, self.grid_panel)
-        
+
         # contents of score_board
         self.counter = Label('000', StyleName='digit counter')
         self.face = Smiley(self)
         self.timer = Label('000', StyleName='digit timer')
-        
+
         ADD(score_board, self.counter, self.face, self.timer)
         score_board.setCellWidth(self.face, '100%')
-        
+
         self.create_grid()
         self.start()
-    
+
     def onBrowserEvent(self, event):
         # prevent right click context menu as well as all the other events.
         DOM.eventPreventDefault(event)
-    
+
     def create_grid(self):
         # contents of self.grid_panel
         self.grid = CustomGrid(self, self.row, self.column)
         ADD(self.grid_panel, self.grid)
-    
+
     def start(self, no_of_bomb=None):
         self.time = -1
         self.started = True
         self.first_click = True
-        
+
         self.bombed_cells = []
         self.flagged_cells = []
         self.to_be_released = []  # cells to be released after being pressed
         self.count_opened_cells = 0
         self.no_of_click = 0
-        
+
         if self.level in (1, 2, 3):
             self.no_of_bomb = self.calculate_no_of_bomb(self.row, self.column)
         elif no_of_bomb is not None:
             self.no_of_bomb = no_of_bomb
         self.squares = self.row * self.column
         self.no_of_safe_zones = self.squares - self.no_of_bomb
-        
+
         self.set_counter()
         self.timer.setText('000')
-        
+
         self.generate_bombs()
         self.face.setStyleName('facesmile')
-    
+
     def calculate_no_of_bomb(self, row, column):
         return int((row * column * 10) / 64.) or 1
-    
+
     def get_all_cells(self):
         for i in xrange(self.row):
             for j in xrange(self.column):
                 yield self.grid.get_cell(i, j)
-    
+
     def get_neighbors(self, cell):
         x = cell.x
         y = cell.y
@@ -456,17 +456,17 @@ class Game(VerticalPanel):
                     if 0 <= j < column:
                         if (i,j) != (x, y):
                             yield self.grid.get_cell(i, j)
-    
+
     def set_counter(self):
         next_value = self.no_of_bomb - len(self.flagged_cells)
-        
+
         if next_value == 0 and self.started:
             self.counter.setStyleName('digit counter-blue')
             self.counter.addClickListener(RemainingMineHandler(self))
         else:
             self.counter.setStyleName('digit counter')
             self.counter._clickListeners = []
-        
+
         if next_value < 0:
             template = '-00'
             next_value = abs(next_value)
@@ -475,7 +475,7 @@ class Game(VerticalPanel):
         value = str(next_value)
         value = template[:-len(value)] + value
         self.counter.setText(value)
-    
+
     def onTimer(self, target):
         if not self.started or self.first_click:
             return
@@ -488,7 +488,7 @@ class Game(VerticalPanel):
         else:
             self.started = False
             self.face.setStyleName('faceclock')
-    
+
     def sample(self, population, k):
         # pyjamas doesn't support random.sample but random.choice
         seq = list(population)
@@ -498,7 +498,7 @@ class Game(VerticalPanel):
             seq.remove(pick)
             s.append(pick)
         return s
-    
+
     def generate_bombs(self):
         # generate 1 extra mine so that if user's first click is bomb, move that
         bombs = self.sample(xrange(self.squares), self.no_of_bomb+1)
@@ -516,7 +516,7 @@ class Game(VerticalPanel):
             for one in self.get_neighbors(mine):
                 if one.count != -1:
                     one.count += 1
-    
+
     def move_to_extra_mine(self, to_be_moved):
         to_be_moved.count = 0
         self.bombed_cells.remove(to_be_moved)
@@ -525,13 +525,13 @@ class Game(VerticalPanel):
                 to_be_moved.count += 1
             else:
                 one.count -= 1
-        
+
         self.extra_mine.count = -1
         self.bombed_cells.append(self.extra_mine)
         for one in self.get_neighbors(self.extra_mine):
             if one.count != -1:
                 one.count += 1
-    
+
     def press_neighbor_cells(self, cell):
         self.count_flags = 0
         self.bomb_explodes_on = []
@@ -546,14 +546,14 @@ class Game(VerticalPanel):
             else:
                 if one.count == -1:
                     self.bomb_explodes_on.append(one)
-    
+
     def open_if_satisfies(self, cell):
         if self.count_flags == cell.count:
             if self.bomb_explodes_on:
                 self.show_all_bombs(self.bomb_explodes_on)
             else:
                 self.open_neighboring_cells(cell)
-    
+
     def open_neighboring_cells(self, cell):
         if not self.started:
             return
@@ -567,7 +567,7 @@ class Game(VerticalPanel):
                 else:
                     setColorfulHTML(one.getElement(), one.count)
         self.check_win()
-    
+
     def check_win(self):
         if not self.started:
             return
@@ -587,7 +587,7 @@ class Game(VerticalPanel):
                 self.remote.add_score(name, self.level, self.time, \
                                       self.no_of_click, self.remote_handler)
                 self.add_player_to_toppers(name)
-    
+
     def add_player_to_toppers(self, name):
         current_level = self.level - 1
         toppers_in_this_level = self.toppers[current_level]
@@ -595,21 +595,21 @@ class Game(VerticalPanel):
         self.toppers[current_level] = sorted(toppers_in_this_level, \
                                              key=lambda score: score[1])
         self.remote_handler.load_top_scores()
-        
+
     def show_all_bombs(self, bomb_explodes_on=[]):
         self.started = False
         self.face.setStyleName('facedead')
-        
+
         for one in self.bombed_cells:
             if one.state != 1:
                 one.setStyleName('cell bombrevealed')
         for one in self.flagged_cells:
             if one.count != -1:
                 one.setStyleName('cell bombmisflagged')
-        
+
         for one in bomb_explodes_on:
             one.setStyleName('cell bombdeath')
-    
+
     def next_game(self, row, column, no_of_bomb=None):
         if row < self.row and column < self.column:
             self.row, self.column = row, column
@@ -620,7 +620,7 @@ class Game(VerticalPanel):
             self.grid_panel.remove(self.grid)
             self.create_grid()
             self.start(no_of_bomb)
-    
+
     def restart(self, no_of_bomb=None):
         for one in self.get_all_cells():
             one.count = 0
@@ -635,7 +635,7 @@ if __name__ == '__main__':
     LOG = HTMLPanel('', StyleName='log')
     SCORES = HTMLPanel('', StyleName='scores')
     game = Game(8, 8)
-    
+
     ADD(RootPanel('content'), game, SCORES, LOG)
 
     pyjd.run()
